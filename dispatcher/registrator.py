@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import socket
+import json
 
 from logger import logger
 from workers import register_worker
@@ -13,17 +14,13 @@ COMMANDS = {
 
 
 def parse_message(message):
-    """ format message: 'command worker_id' """
-    message_items = message.split(' ')
-    if len(message_items) != 2:
-        logger.error('bad message from worker: %s', message)
-        return None, None
-    command, worker_id = message_items
-    command = command.lower()
-    if command not in COMMANDS:
-        logger.error('bad command from worker (%s): %s', worker_id, command)
-        return None, None
-    return command, worker_id
+    """ message in json """
+    try:
+        message_dict = json.loads(message)
+    except ValueError as err:
+        logger.error('json error from message: %s (%s)', message, err)
+        return None
+    return message_dict
 
 
 def registrator(host, port):
@@ -34,14 +31,15 @@ def registrator(host, port):
         message, client = sock.recvfrom(1024)
         logger.info('recv message "%s" from %s', message, client)
 
-        command, worker_id = parse_message(message)
+        command = parse_message(message)
+        logger.debug(command)
         if command is None:
             error_message = 'ERROR: bad message (%s)' % message
             sock.sendto(error_message, client)
             continue
 
-        handler = COMMANDS[command]
-        if handler(worker_id, client[0], client[1]):
+        handler = COMMANDS[command['command']]
+        if handler(command, client):
             sock.sendto('OK Registered', client)
             logger.info('send "OK Registered" to %s', client)
         else:

@@ -39,10 +39,12 @@ def update_last_registration_in_worker(worker_id):
     return worker
 
 
-def register_worker(worker_id, host, port, ttl=600):
-    if worker_id not in POOL_WORKERS:
-        return register_new_worker(worker_id, host, port, ttl)
-    return update_last_registration_in_worker(worker_id)
+def register_worker(command, client, ttl=600):
+    if command['id'] not in POOL_WORKERS:
+        port = command['port']
+        return register_new_worker(
+            command['id'], client[0], port, ttl)
+    return update_last_registration_in_worker(command['id'])
 
 
 def _get_free_worker():
