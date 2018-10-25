@@ -25,7 +25,7 @@ def register_new_worker(worker_id, host, port, ttl=600):
     return worker
 
 
-def update_last_registration_in_worker(worker_id):
+def update_last_registration_in_worker(worker_id, host, port):
     LOCK_POOL_WORKERS.acquire()
     worker = POOL_WORKERS.get(worker_id)
     if not worker:
@@ -33,6 +33,15 @@ def update_last_registration_in_worker(worker_id):
         return
     logger.debug(worker)
     worker['last_registration'] = datetime.now()
+
+    # Если изменился порт или хост у воркера, сбрасываем статус во free
+    if host and worker['host'] != host:
+        worker['host'] = host
+        worker['status'] = 'free'
+    if port and worker['port'] != port:
+        worker['port'] = port
+        worker['status'] = 'free'
+
     LOCK_POOL_WORKERS.release()
 
     logger.info('update last_registration in %s', worker_id)
@@ -40,11 +49,11 @@ def update_last_registration_in_worker(worker_id):
 
 
 def register_worker(command, client, ttl=600):
+    port = command['port']
     if command['id'] not in POOL_WORKERS:
-        port = command['port']
         return register_new_worker(
             command['id'], client[0], port, ttl)
-    return update_last_registration_in_worker(command['id'])
+    return update_last_registration_in_worker(command['id'], client[0], port)
 
 
 def _get_free_worker():
