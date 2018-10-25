@@ -10,7 +10,8 @@
     },
     "register": {
       "host": "127.0.0.1",
-      "port": 6788
+      "port": 6788,
+      "time_to_live": 30
     }
   }
 }

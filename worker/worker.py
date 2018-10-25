@@ -24,8 +24,9 @@ def start_register_thread(config, port_task_worker):
     register_config = config['register']
     host, port = register_config['host'], register_config['port']
     worker_id = config['id']
+    time_to_live = register_config.get('time_to_live', 60)
     thread_register = threading.Thread(
-        target=register, args=(host, port, worker_id, port_task_worker))
+        target=register, args=(host, port, worker_id, port_task_worker, time_to_live))
     thread_register.daemon = True
     thread_register.start()
 
@@ -33,11 +34,14 @@ def start_register_thread(config, port_task_worker):
 def main():
     logging.basicConfig(level=logging.DEBUG)
     config = get_config()
-    if not config:
+    if not config or 'worker' not in config:
         logger.error('Config file is failed')
         return
+    logger.debug('config: %s', config)
 
     # Здесь открываем случайный udp порт для получения задач от диспетчера
+    # номер порта потом сообщим диспетчеру
+    # Тут кстати я забыл про условие, что порт задаётся в конфиге
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('0.0.0.0', 0))
     port_task_worker = sock.getsockname()[1]
