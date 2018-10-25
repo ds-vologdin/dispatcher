@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 import threading
+import time
 
 from logger import logger
 
@@ -8,12 +9,14 @@ LOCK_POOL_WORKERS = threading.RLock()
 POOL_WORKERS = {}
 
 
-def register_new_worker(worker_id, ttl=600):
+def register_new_worker(worker_id, host, port, ttl=600):
     worker = {
         'id': worker_id,
         'last_registration': datetime.now(),
         'ttl': ttl,
         'status': 'free',
+        'host': host,
+        'port': port,
     }
 
     with LOCK_POOL_WORKERS:
@@ -36,7 +39,37 @@ def update_last_registration_in_worker(worker_id):
     return worker
 
 
-def register_worker(worker_id, ttl=600):
+def register_worker(worker_id, host, port, ttl=600):
     if worker_id not in POOL_WORKERS:
-        return register_new_worker(worker_id, ttl)
+        return register_new_worker(worker_id, host, port, ttl)
     return update_last_registration_in_worker(worker_id)
+
+
+def _get_free_worker():
+    free_worker = None
+    with LOCK_POOL_WORKERS:
+        for worker in POOL_WORKERS.values():
+            if worker.get('status') == 'free':
+                worker['status'] = 'busy'
+                free_worker = worker
+                break
+    return free_worker
+
+
+def get_free_worker():
+    while True:
+        worker = _get_free_worker()
+        logger.debug('free worker: %s', worker)
+        if worker:
+            break
+        time.sleep(2)
+    return worker
+
+
+def set_status_worker(worker_id, status):
+    if worker_id not in POOL_WORKERS:
+        return
+    with LOCK_POOL_WORKERS:
+        worker = POOL_WORKERS[worker_id]
+        worker['status'] = status
+    return worker

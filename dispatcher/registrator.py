@@ -27,9 +27,9 @@ def parse_message(message):
 
 
 def registrator(host, port):
-    print host, port
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((host, port))
+    logger.info('bind %s:%s', host, port)
     while True:
         message, client = sock.recvfrom(1024)
         logger.info('recv message "%s" from %s', message, client)
@@ -41,7 +41,7 @@ def registrator(host, port):
             continue
 
         handler = COMMANDS[command]
-        if handler(worker_id):
+        if handler(worker_id, client[0], client[1]):
             sock.sendto('OK Registered', client)
             logger.info('send "OK Registered" to %s', client)
         else:
