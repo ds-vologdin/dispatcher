@@ -25,7 +25,7 @@ def register_new_worker(worker_id, host, port, ttl=600):
     return worker
 
 
-def update_last_registration_in_worker(worker_id, host, port):
+def update_last_registration_in_worker(worker_id):
     LOCK_POOL_WORKERS.acquire()
     worker = POOL_WORKERS.get(worker_id)
     if not worker:
@@ -45,7 +45,7 @@ def register_worker(command, client, ttl=600):
     if command['id'] not in POOL_WORKERS:
         return register_new_worker(
             command['id'], client[0], port, ttl)
-    return update_last_registration_in_worker(command['id'], client[0], port)
+    return update_last_registration_in_worker(command['id'])
 
 
 def _get_free_worker():
