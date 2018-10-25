@@ -1,0 +1,12 @@
+{
+  "server": {
+    "dispatcher" : {
+      "host": "127.0.0.1",
+      "port": 6789
+    },
+    "register": {
+      "host": "127.0.0.1",
+      "port": 6788
+    }
+  }
+}

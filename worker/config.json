@@ -1,0 +1,13 @@
+{
+  "worker": {
+    "id": "worker-1",
+    "dispatcher" : {
+      "host": "127.0.0.1",
+      "port": 6787
+    },
+    "register": {
+      "host": "127.0.0.1",
+      "port": 6788
+    }
+  }
+}
