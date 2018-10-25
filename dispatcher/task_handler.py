@@ -9,7 +9,11 @@ def execute_task_from_worker(task, worker, timeout=20):
     logger.debug('send task to %s: %s', worker, task)
     worker_address = (worker['host'], worker['port'])
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    except socket.error as err:
+        logger.error(err)
+        return
     sock.settimeout(timeout)
     sock.sendto(task, worker_address)
     result = None
@@ -29,7 +33,7 @@ def tasks_handler(task, client):
             break
         # Если ответ None - значит воркер плох.
         # Плохих воркеров мы удаляем из пула.
-        # они добавятся если будут ещеё живы при следующей регистрации.
+        # они добавятся, если будут ещё живы при следующей регистрации.
         delete_worker_of_pool(worker.get('id'))
         worker = get_free_worker()
     set_status_worker(worker.get('id'), 'free')
@@ -40,7 +44,8 @@ def tasks_handler(task, client):
     # общего потока, который занимается общением с клиентом.
     # tasks_handler с ним должен общаться через Queue
     # А пока пусть будет так :)
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(result, client)
-
-    return
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.sendto(result, client)
+    except socket.error as err:
+        logger.error(err)

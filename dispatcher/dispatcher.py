@@ -15,6 +15,8 @@ def get_config(filename='config.json'):
             return json.load(f)
     except IOError as err:
         logger.error('IOError: %s', err)
+    except ValueError as err:
+        logger.error('ValueError: %s', err)
 
 
 def start_register_thread(config):
@@ -32,7 +34,6 @@ def start_task_handler_thread(task, client):
     thread_register.start()
     logger.info('task handler thread started')
     return thread_register
-
 
 
 def main():
@@ -55,10 +56,22 @@ def main():
         return
     host, port = config_dispatcher['host'], config_dispatcher['port']
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((host, port))
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind((host, port))
+    except socket.error as err:
+        logger.error(err)
+        return
     logger.info('bind %s:%s', host, port)
     while True:
+        # Для каждого задния от клиента запускаем новый thread
+        # Это не самый справедливый вариант, какому-то из клиентов
+        # может не повезти, и его задача может ждать выполнения очень долго.
+        # Вообще имело смысл задачи складывать в Queue, а потом в thread-ах
+        # их потихоньку вытягивать и отдавать на вычисление воркерам
+        # Но подумал об этом уже поздно.
+        # И количество тредов лимитно... так что работает это на относительно
+        # не большой нагрузке
         task, client = sock.recvfrom(1024)
         logger.info('recv task "%s" from %s', task, client)
         start_task_handler_thread(task, client)

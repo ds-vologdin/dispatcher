@@ -24,8 +24,12 @@ def parse_message(message):
 
 
 def registrator(host, port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((host, port))
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind((host, port))
+    except socket.error as err:
+        logger.error(err)
+        return
     logger.info('bind %s:%s', host, port)
     while True:
         message, client = sock.recvfrom(1024)
