@@ -34,14 +34,6 @@ def update_last_registration_in_worker(worker_id, host, port):
     logger.debug(worker)
     worker['last_registration'] = datetime.now()
 
-    # Если изменился порт или хост у воркера, сбрасываем статус во free
-    if host and worker['host'] != host:
-        worker['host'] = host
-        worker['status'] = 'free'
-    if port and worker['port'] != port:
-        worker['port'] = port
-        worker['status'] = 'free'
-
     LOCK_POOL_WORKERS.release()
 
     logger.info('update last_registration in %s', worker_id)
@@ -84,4 +76,11 @@ def set_status_worker(worker_id, status):
         worker = POOL_WORKERS[worker_id]
         worker['status'] = status
     logger.debug('set_status_worker: %s', worker)
+    return worker
+
+
+def delete_worker_of_pool(worker_id):
+    with LOCK_POOL_WORKERS:
+        worker = POOL_WORKERS.pop(worker_id)
+    logger.info('delete worker: %s', worker)
     return worker

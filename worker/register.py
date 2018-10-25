@@ -2,12 +2,15 @@
 import socket
 import time
 import json
+import uuid
 
 from logger import logger
 
 
 def register(host, port, worker_id, port_task_worker, ttl=60):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # worker_id пусть будет уникальным
+    worker_id = '%s-%s' % (worker_id, uuid.uuid4())
     command = {
         'command': 'register',
         'id': worker_id,

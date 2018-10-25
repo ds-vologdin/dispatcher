@@ -1,7 +1,7 @@
 {
   "worker": {
     "id": "worker-1",
-    "calculation_time": [2, 10],
+    "calculation_time": [2, 30],
     "probability_of_failure": 0.2,
     "time_of_failure": 20,
     "dispatcher" : {

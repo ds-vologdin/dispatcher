@@ -1,17 +1,22 @@
 # -*- coding: utf-8 -*-
 import socket
 
-from workers import get_free_worker, set_status_worker
+from workers import get_free_worker, delete_worker_of_pool, set_status_worker
 from logger import logger
 
 
-def execute_task_from_worker(task, worker):
+def execute_task_from_worker(task, worker, timeout=20):
     logger.debug('send task to %s: %s', worker, task)
     worker_address = (worker['host'], worker['port'])
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(timeout)
     sock.sendto(task, worker_address)
-    result, from_address = sock.recvfrom(1024)
+    result = None
+    try:
+        result, from_address = sock.recvfrom(1024)
+    except socket.timeout:
+        logger.error('timeout, worker is bad')
     return result
 
 
@@ -22,7 +27,10 @@ def tasks_handler(task, client):
         result = execute_task_from_worker(task, worker)
         if result:
             break
-        set_status_worker(worker.get('id'), 'fail')
+        # Если ответ None - значит воркер плох.
+        # Плохих воркеров мы удаляем из пула.
+        # они добавятся если будут ещеё живы при следующей регистрации.
+        delete_worker_of_pool(worker.get('id'))
         worker = get_free_worker()
     set_status_worker(worker.get('id'), 'free')
     logger.debug('recv result %s', result)
