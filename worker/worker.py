@@ -46,6 +46,9 @@ def main():
     start_register_thread(config['worker'], port_task_worker)
 
     calculation_time = config['worker'].get('calculation_time', (2, 10))
+    probability_of_failure = config['worker'].get('probability_of_failure', 0.1)
+    time_of_failure = config['worker'].get('time_of_failure', 15)
+
     i = 0
     while True:
         task, dispatcher = sock.recvfrom(1024)
@@ -56,6 +59,11 @@ def main():
         result = 'task %s (%s) done' % (i, task)
         sock.sendto(result, dispatcher)
         logger.info('send result task %s (%s)', i, task)
+
+        if random.random() <= probability_of_failure:
+            logger.error('broken worker (%s second)', time_of_failure)
+            time.sleep(time_of_failure)
+        i += 1
 
 
 if __name__ == "__main__":
