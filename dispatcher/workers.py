@@ -74,4 +74,5 @@ def set_status_worker(worker_id, status):
     with LOCK_POOL_WORKERS:
         worker = POOL_WORKERS[worker_id]
         worker['status'] = status
+    logger.debug('set_status_worker: %s', worker)
     return worker

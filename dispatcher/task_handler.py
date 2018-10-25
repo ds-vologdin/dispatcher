@@ -7,8 +7,12 @@ from logger import logger
 
 def execute_task_from_worker(task, worker):
     logger.debug('send task to %s: %s', worker, task)
-    worker_host = (worker['host'], worker['port'])
-    return 'DONE'
+    worker_address = (worker['host'], worker['port'])
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(task, worker_address)
+    result, from_address = sock.recvfrom(1024)
+    return result
 
 
 def tasks_handler(task, client):
@@ -21,6 +25,7 @@ def tasks_handler(task, client):
         set_status_worker(worker.get('id'), 'fail')
         worker = get_free_worker()
     set_status_worker(worker.get('id'), 'free')
+    logger.debug('recv result %s', result)
 
     # Здесь дыра безопасности
     # Создаю новый сокет поскольку сокеты в python не тредобезопасные.

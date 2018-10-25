@@ -6,7 +6,7 @@ import json
 from logger import logger
 
 
-def register(host, port, worker_id, port_task_worker, ttl=10):
+def register(host, port, worker_id, port_task_worker, ttl=60):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     command = {
         'command': 'register',

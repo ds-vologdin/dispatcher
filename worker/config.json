@@ -1,6 +1,7 @@
 {
   "worker": {
     "id": "worker-1",
+    "calculation_time": [2, 10],
     "dispatcher" : {
       "host": "127.0.0.1",
       "port": 6787
