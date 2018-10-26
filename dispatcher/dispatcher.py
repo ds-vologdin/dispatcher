@@ -6,6 +6,7 @@ import socket
 
 from registrator import registrator
 from task_handler import tasks_handler
+from bad_worker_collector import bad_worker_collector
 from logger import logger
 
 
@@ -29,11 +30,21 @@ def start_register_thread(config):
 
 
 def start_task_handler_thread(task, client):
-    thread_register = threading.Thread(target=tasks_handler, args=(task, client))
+    thread_register = threading.Thread(
+        target=tasks_handler, args=(task, client))
     thread_register.daemon = True
     thread_register.start()
     logger.info('task handler thread started')
     return thread_register
+
+
+def start_bad_worker_collector(frequency=60):
+    thread_collector = threading.Thread(
+        target=bad_worker_collector, args=(frequency,))
+    thread_collector.daemon = True
+    thread_collector.start()
+    logger.info('bad_worker_collector started')
+    return thread_collector
 
 
 def main():
@@ -48,6 +59,7 @@ def main():
         return
 
     start_register_thread(config_register)
+    start_bad_worker_collector(frequency=30)
 
     try:
         config_dispatcher = config['server']['dispatcher']

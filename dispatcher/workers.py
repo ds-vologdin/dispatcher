@@ -84,3 +84,24 @@ def delete_worker_of_pool(worker_id):
         worker = POOL_WORKERS.pop(worker_id)
     logger.info('delete worker: %s', worker)
     return worker
+
+
+def clean_pool_worker():
+    datetime_now = datetime.now()
+    bad_worker_ids = []
+    with LOCK_POOL_WORKERS:
+        for worker_id in POOL_WORKERS:
+            worker = POOL_WORKERS[worker_id]
+            ttl = worker.get('ttl', 600)
+            last_registration = worker.get('last_registration')
+            if not last_registration:
+                bad_worker_ids.append(worker.get('id'))
+                continue
+            time_to_last_registration = datetime_now - last_registration
+            if time_to_last_registration.seconds > ttl:
+                bad_worker_ids.append(worker.get('id'))
+                continue
+        for worker_id in bad_worker_ids:
+            POOL_WORKERS.pop(worker_id)
+    logger.debug('clean pool worker: %s', bad_worker_ids)
+    return bad_worker_ids
