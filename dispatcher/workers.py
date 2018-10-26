@@ -9,45 +9,46 @@ LOCK_POOL_WORKERS = threading.RLock()
 POOL_WORKERS = {}
 
 
-def register_new_worker(worker_id, host, port, ttl=600):
+def _register_new_worker(worker_id, host, port, datetime_now, ttl=600):
+    """ Нельзя использовать без блокировки LOCK_POOL_WORKERS """
     worker = {
         'id': worker_id,
-        'last_registration': datetime.now(),
+        'last_registration': datetime_now,
         'last_task_done': None,
         'ttl': ttl,
         'status': 'free',
         'host': host,
         'port': port,
     }
-
-    with LOCK_POOL_WORKERS:
-        POOL_WORKERS[worker_id] = worker
-    logger.info('worker "%s" registered', worker_id)
+    POOL_WORKERS[worker_id] = worker
     return worker
 
 
-def update_last_registration_in_worker(worker_id):
-    LOCK_POOL_WORKERS.acquire()
+def _update_last_registration_in_worker(worker_id, datetime_now):
+    """ Нельзя использовать без блокировки LOCK_POOL_WORKERS """
     worker = POOL_WORKERS.get(worker_id)
     if not worker:
-        LOCK_POOL_WORKERS.release()
         return
-    logger.debug(worker)
-    worker['last_registration'] = datetime.now()
-
-    LOCK_POOL_WORKERS.release()
-
-    logger.info('update last_registration in %s', worker_id)
+    worker['last_registration'] = datetime_now
     return worker
 
 
 def register_worker(command, client, ttl=600):
-    # А здесь возможна гонка по данным!!!! Переписать!
+    """
+    Функция занимается регистрацией новых воркеров и
+    обновлением регастрационных данных старых воркеров.
+    """
     port = command['port']
-    if command['id'] not in POOL_WORKERS:
-        return register_new_worker(
-            command['id'], client[0], port, ttl)
-    return update_last_registration_in_worker(command['id'])
+    datetime_now = datetime.now()
+    with LOCK_POOL_WORKERS:
+        if command['id'] not in POOL_WORKERS:
+            result = _register_new_worker(
+                command['id'], client[0], port, datetime_now, ttl)
+        else:
+            result = _update_last_registration_in_worker(
+                command['id'], datetime_now)
+    logger.info('worker "%s" registered', result)
+    return result
 
 
 def _get_free_worker():
@@ -61,13 +62,13 @@ def _get_free_worker():
     return free_worker
 
 
-def get_free_worker():
+def get_free_worker(frequency=2):
     while True:
         worker = _get_free_worker()
         logger.debug('free worker: %s', worker)
         if worker:
             break
-        time.sleep(2)
+        time.sleep(frequency)
     return worker
 
 
