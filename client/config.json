@@ -3,6 +3,7 @@
     "dispatcher" : {
       "host": "127.0.0.1",
       "port": 6789
-    }
+    },
+    "max_time_of_task": 120
   }
 }
