@@ -42,6 +42,7 @@ def update_last_registration_in_worker(worker_id):
 
 
 def register_worker(command, client, ttl=600):
+    # А здесь возможна гонка по данным!!!! Переписать!
     port = command['port']
     if command['id'] not in POOL_WORKERS:
         return register_new_worker(
@@ -108,6 +109,11 @@ def is_datetime_old(current_datetime, datetime_now, ttl):
 
 
 def clean_pool_worker():
+    """
+    Функция для чистки пула воркеров
+    Воркер считаем плохим (мёртвым), если время с последней регистрации
+    и время с последней решённой задачи превысило TTL
+    """
     datetime_now = datetime.now()
     bad_worker_ids = []
     with LOCK_POOL_WORKERS:

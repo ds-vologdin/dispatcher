@@ -58,7 +58,9 @@ def main():
         logger.error('config error: section register')
         return
 
+    # Регистрация воркеров происходит в отдельном треде
     start_register_thread(config_register)
+    # Запускаем отдельный тред для чистки пула воркеров
     start_bad_worker_collector(frequency=30)
 
     try:
@@ -68,6 +70,7 @@ def main():
         return
     host, port = config_dispatcher['host'], config_dispatcher['port']
 
+    # А здесь начинается основной цикл обработки поступающих от клиентов задач
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.bind((host, port))

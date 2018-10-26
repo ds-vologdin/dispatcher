@@ -42,17 +42,20 @@ def main():
     # Здесь открываем случайный udp порт для получения задач от диспетчера
     # номер порта потом сообщим диспетчеру
     # Тут кстати я забыл про условие, что порт задаётся в конфиге
+    # но будем считать это фичёй: для запуска нескольких воркеров нам не придётся править конфиг :)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('0.0.0.0', 0))
     port_task_worker = sock.getsockname()[1]
     logger.info('port for recv task: %s', port_task_worker)
 
+    # Регистрация воркера происходит в отдельном треде
     start_register_thread(config['worker'], port_task_worker)
 
     calculation_time = config['worker'].get('calculation_time', (2, 10))
     probability_of_failure = config['worker'].get('probability_of_failure', 0.1)
     time_of_failure = config['worker'].get('time_of_failure', 15)
 
+    # Основной цикл обработки задач
     i = 0
     while True:
         task, dispatcher = sock.recvfrom(1024)
