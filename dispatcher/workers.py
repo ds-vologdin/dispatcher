@@ -13,6 +13,7 @@ def register_new_worker(worker_id, host, port, ttl=600):
     worker = {
         'id': worker_id,
         'last_registration': datetime.now(),
+        'last_task_done': None,
         'ttl': ttl,
         'status': 'free',
         'host': host,
@@ -79,11 +80,31 @@ def set_status_worker(worker_id, status):
     return worker
 
 
+def set_status_task_done_in_worker(worker_id):
+    if worker_id not in POOL_WORKERS:
+        return
+    with LOCK_POOL_WORKERS:
+        worker = POOL_WORKERS[worker_id]
+        worker['status'] = 'free'
+        worker['last_task_done'] = datetime.now()
+    logger.debug('set_status_task_done_in_worker: %s', worker)
+    return worker
+
+
 def delete_worker_of_pool(worker_id):
     with LOCK_POOL_WORKERS:
         worker = POOL_WORKERS.pop(worker_id)
     logger.info('delete worker: %s', worker)
     return worker
+
+
+def is_datetime_old(current_datetime, datetime_now, ttl):
+    if not current_datetime:
+        return True
+    time_to_last_registration = datetime_now - current_datetime
+    if time_to_last_registration.seconds > ttl:
+        return True
+    return False
 
 
 def clean_pool_worker():
@@ -94,11 +115,15 @@ def clean_pool_worker():
             worker = POOL_WORKERS[worker_id]
             ttl = worker.get('ttl', 600)
             last_registration = worker.get('last_registration')
-            if not last_registration:
-                bad_worker_ids.append(worker.get('id'))
-                continue
-            time_to_last_registration = datetime_now - last_registration
-            if time_to_last_registration.seconds > ttl:
+            last_task_done = worker.get('last_task_done')
+
+            registration_is_old = is_datetime_old(
+                last_registration, datetime_now, ttl)
+
+            last_task_done_is_old = is_datetime_old(
+                last_task_done, datetime_now, ttl)
+
+            if registration_is_old and last_task_done_is_old:
                 bad_worker_ids.append(worker.get('id'))
                 continue
         for worker_id in bad_worker_ids:

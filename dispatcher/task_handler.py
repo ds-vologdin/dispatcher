@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import socket
 
-from workers import get_free_worker, delete_worker_of_pool, set_status_worker
+from workers import get_free_worker, delete_worker_of_pool
+from workers import set_status_task_done_in_worker
 from logger import logger
 
 
@@ -36,7 +37,7 @@ def tasks_handler(task, client):
         # они добавятся, если будут ещё живы при следующей регистрации.
         delete_worker_of_pool(worker.get('id'))
         worker = get_free_worker()
-    set_status_worker(worker.get('id'), 'free')
+    set_status_task_done_in_worker(worker.get('id'))
     logger.debug('recv result %s', result)
 
     # Создаю новый сокет поскольку сокеты в python не тредобезопасные.
